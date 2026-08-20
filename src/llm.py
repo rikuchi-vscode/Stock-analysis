@@ -14,11 +14,20 @@ load_dotenv()
 
 
 def get_api_key() -> str:
-    """GEMINI_API_KEY を環境変数から取得・検証"""
+    """GEMINI_API_KEY を環境変数または Streamlit Secrets から取得・検証"""
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
+        try:
+            import streamlit as st
+            if hasattr(st, "secrets") and "GEMINI_API_KEY" in st.secrets:
+                api_key = st.secrets["GEMINI_API_KEY"]
+                os.environ["GEMINI_API_KEY"] = api_key
+        except Exception:
+            pass
+
+    if not api_key:
         raise ValueError(
-            "GEMINI_API_KEY が設定されていません。.env ファイルに GEMINI_API_KEY=xxx を設定してください。"
+            "GEMINI_API_KEY が設定されていません。.env ファイルまたは Streamlit Secrets に GEMINI_API_KEY を設定してください。"
         )
     return api_key
 
