@@ -1,0 +1,11 @@
+langgraph>=0.2.0
+langchain-google-genai>=2.0.0
+google-genai>=0.1.0
+pydantic>=2.0.0
+yfinance>=0.2.40
+pandas>=2.0.0
+pandas-ta>=0.3.14b0
+matplotlib>=3.8.0
+mplfinance>=0.12.10b0
+python-dotenv>=1.0.0
+rich>=13.7.0
