@@ -8,6 +8,7 @@ from datetime import datetime
 from src.state import AgentState
 from src.db import save_analysis
 from src.logger import get_logger
+from src.time_utils import get_jst_now_str
 
 logger = get_logger("report")
 
@@ -19,7 +20,7 @@ def generate_markdown_report(state: AgentState) -> str:
     ticker = state.get("ticker", "")
     company_name = state.get("company_name", ticker)
     sector = state.get("sector", "不明")
-    now_str = datetime.now().strftime("%Y年%m月%d日 %H:%M")
+    now_str = get_jst_now_str("%Y年%m月%d日 %H:%M")
 
     market_data = state.get("market_data", {})
     financial_data = state.get("financial_data", {})
@@ -267,7 +268,7 @@ def run_report_generator(state: AgentState) -> dict:
     safe_ticker = ticker.replace(".", "_")
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = get_jst_now_str("%Y%m%d_%H%M%S")
     filename = f"Report_{safe_ticker}_{timestamp}.md"
     file_path = os.path.join(OUTPUT_DIR, filename)
 

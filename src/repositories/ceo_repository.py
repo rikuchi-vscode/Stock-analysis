@@ -1,12 +1,9 @@
-"""
-CEO レイヤー用データベース操作・リポジトリモジュール
-"""
-
 import json
 import sqlite3
 from datetime import datetime
 from typing import Dict, Any, List, Optional
 from src.db import DB_PATH, init_db
+from src.time_utils import get_jst_now_str
 from src.contracts.ceo_request import NormalizedRequest, CEOSummary
 
 
@@ -23,12 +20,13 @@ def save_ceo_request(
 
     task_type = normalized.task_type if normalized else "stock_analysis"
     ticker = normalized.ticker if normalized else None
+    created_at = get_jst_now_str()
 
     cursor.execute("""
         INSERT OR REPLACE INTO ceo_requests (
-            request_id, user_request, task_type, ticker, status
-        ) VALUES (?, ?, ?, ?, ?)
-    """, (request_id, user_request, task_type, ticker, status))
+            request_id, user_request, task_type, ticker, status, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?)
+    """, (request_id, user_request, task_type, ticker, status, created_at))
 
     conn.commit()
     conn.close()
@@ -47,12 +45,13 @@ def save_ceo_run(
     init_db()
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
+    created_at = get_jst_now_str()
 
     cursor.execute("""
         INSERT OR REPLACE INTO ceo_runs (
-            run_id, request_id, analysis_run_id, verification_status, status, trace_id, error
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
-    """, (run_id, request_id, analysis_run_id, verification_status, status, trace_id, error))
+            run_id, request_id, analysis_run_id, verification_status, status, trace_id, error, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """, (run_id, request_id, analysis_run_id, verification_status, status, trace_id, error, created_at))
 
     conn.commit()
     conn.close()
@@ -70,12 +69,13 @@ def save_agent_delegation(
     init_db()
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
+    created_at = get_jst_now_str()
 
     cursor.execute("""
         INSERT OR REPLACE INTO agent_delegations (
-            delegation_id, run_id, from_agent, to_agent, payload_ref, status
-        ) VALUES (?, ?, ?, ?, ?, ?)
-    """, (delegation_id, run_id, from_agent, to_agent, payload_ref, status))
+            delegation_id, run_id, from_agent, to_agent, payload_ref, status, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    """, (delegation_id, run_id, from_agent, to_agent, payload_ref, status, created_at))
 
     conn.commit()
     conn.close()
@@ -92,14 +92,15 @@ def save_ceo_summary(
     cursor = conn.cursor()
 
     summary_json = json.dumps(summary.model_dump(), ensure_ascii=False)
+    created_at = get_jst_now_str()
 
     # 既存のサマリーがあれば削除して最新版を保存
     cursor.execute("DELETE FROM ceo_summaries WHERE run_id = ?", (run_id,))
     cursor.execute("""
         INSERT INTO ceo_summaries (
-            run_id, summary_json, report_ref
-        ) VALUES (?, ?, ?)
-    """, (run_id, summary_json, report_ref))
+            run_id, summary_json, report_ref, created_at
+        ) VALUES (?, ?, ?, ?)
+    """, (run_id, summary_json, report_ref, created_at))
 
     conn.commit()
     conn.close()

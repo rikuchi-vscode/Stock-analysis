@@ -1,4 +1,4 @@
-﻿"""
+"""
 財務諸表・企業業績データ収集ツール
 実測値・推定値・前回値・欠損（取得不可）を明確に区別して返却します。
 """
@@ -8,6 +8,7 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime
 from src.tools.market_tools import normalize_ticker
 from src.contracts.data_lineage import ValueStatus, DataField, FieldLineageItem
+from src.time_utils import format_to_jst_str
 
 
 def fetch_financial_data(ticker: str) -> Dict[str, Any]:
@@ -48,13 +49,7 @@ def fetch_financial_data(ticker: str) -> Dict[str, Any]:
     
     # データ時点
     fiscal_year_end = info.get("lastFiscalYearEnd")
-    if fiscal_year_end:
-        try:
-            financial_as_of = datetime.fromtimestamp(fiscal_year_end).strftime("%Y-%m-%d")
-        except Exception:
-            financial_as_of = "直近開示決算"
-    else:
-        financial_as_of = "直近開示決算"
+    financial_as_of = format_to_jst_str(fiscal_year_end, format_str="%Y-%m-%d", fallback="直近開示決算")
 
     # ヘルパー: 金額フォーマット
     def format_yen(val: Optional[float]) -> str:

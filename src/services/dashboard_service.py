@@ -10,6 +10,7 @@ from typing import Dict, Any, List
 
 from src.db import DB_PATH, init_db
 from src.contracts.dashboard_metrics import SystemKPIMetrics, DashboardSummary
+from src.time_utils import get_jst_now_str
 from src.repositories.ceo_repository import get_ceo_history
 from src.repositories.policy_repository import list_research_policies
 from src.repositories.monitor_repository import (
@@ -97,7 +98,7 @@ def get_dashboard_summary() -> DashboardSummary:
     recent_reflections = [r.model_dump() for r in list_reflections(limit=5)]
     active_guardrails = [g.model_dump() for g in list_active_guardrail_rules()]
 
-    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    now_str = get_jst_now_str("%Y-%m-%d %H:%M:%S")
 
     return DashboardSummary(
         metrics=metrics,

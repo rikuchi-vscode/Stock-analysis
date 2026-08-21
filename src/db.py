@@ -8,6 +8,7 @@ import json
 import sqlite3
 from datetime import datetime
 from typing import Dict, Any, List, Optional
+from src.time_utils import get_jst_now_str
 
 DB_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
 DB_PATH = os.path.join(DB_DIR, "stock_analysis.db")
@@ -407,48 +408,51 @@ def save_analysis(
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
-    analysis_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    analysis_date = get_jst_now_str("%Y-%m-%d %H:%M:%S")
+    created_at = analysis_date
 
     # analyses レコード挿入
     cursor.execute("""
         INSERT INTO analyses (
             ticker, company_name, sector, analysis_date,
             overall_score, investment_stance, verification_status,
-            iteration_count, report_path
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            iteration_count, report_path, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         ticker, company_name, sector, analysis_date,
         overall_score, investment_stance, verification_status,
-        iteration_count, report_path
+        iteration_count, report_path, created_at
     ))
     analysis_id = cursor.lastrowid
 
     # reports レコード挿入
     cursor.execute("""
-        INSERT INTO reports (analysis_id, ticker, report_content, summary)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO reports (analysis_id, ticker, report_content, summary, created_at)
+        VALUES (?, ?, ?, ?, ?)
     """, (
         analysis_id, ticker, report_content,
-        f"{company_name} ({ticker}) 分析レポート - スコア: {overall_score}/100"
+        f"{company_name} ({ticker}) 分析レポート - スコア: {overall_score}/100",
+        created_at
     ))
 
     # snapshots レコード挿入
     cursor.execute("""
-        INSERT INTO snapshots (analysis_id, market_data, financial_data, news_data)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO snapshots (analysis_id, market_data, financial_data, news_data, created_at)
+        VALUES (?, ?, ?, ?, ?)
     """, (
         analysis_id,
         json.dumps(market_data, ensure_ascii=False),
         json.dumps(financial_data, ensure_ascii=False),
-        json.dumps(news_data, ensure_ascii=False)
+        json.dumps(news_data, ensure_ascii=False),
+        created_at
     ))
 
     # agent_logs レコード挿入
     for log_entry in logs:
         cursor.execute("""
-            INSERT INTO agent_logs (analysis_id, agent_name, log_type, content)
-            VALUES (?, ?, ?, ?)
-        """, (analysis_id, "System", "ExecutionLog", log_entry))
+            INSERT INTO agent_logs (analysis_id, agent_name, log_type, content, created_at)
+            VALUES (?, ?, ?, ?, ?)
+        """, (analysis_id, "System", "ExecutionLog", log_entry, created_at))
 
     conn.commit()
     conn.close()

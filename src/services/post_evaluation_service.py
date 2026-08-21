@@ -8,6 +8,7 @@ from datetime import datetime
 from typing import Dict, Any, List, Optional
 
 from src.contracts.decision_journal import EvaluationSchedule, EvaluationFact, DecisionSnapshot
+from src.time_utils import get_jst_today_str, get_jst_now_str
 from src.repositories.governance_repository import (
     list_due_evaluation_schedules,
     get_decision_snapshot,
@@ -31,7 +32,7 @@ def evaluate_single_schedule(schedule: EvaluationSchedule) -> Optional[Evaluatio
         update_evaluation_schedule_status(schedule.schedule_id, "SKIPPED")
         return None
 
-    today_str = datetime.now().strftime("%Y-%m-%d")
+    today_str = get_jst_today_str("%Y-%m-%d")
     ticker = schedule.ticker
 
     # 1. 現在株価と市場指数の取得
@@ -120,7 +121,7 @@ def evaluate_single_schedule(schedule: EvaluationSchedule) -> Optional[Evaluatio
         data_integrity_ok=data_integrity_ok,
         data_integrity_detail=di_detail,
         rule_based_fact_score=total_fact_score,
-        created_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        created_at=get_jst_now_str("%Y-%m-%d %H:%M:%S")
     )
 
     save_evaluation_fact(fact)

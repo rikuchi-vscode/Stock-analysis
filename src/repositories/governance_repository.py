@@ -1,4 +1,4 @@
-﻿"""
+"""
 ガバナンス & 反省リポジトリ (Governance Repository)
 STEP 4 & STEP 5: 意思決定スナップショット、事後評価スケジュール、客観的事実評価、自己反省、人間フィードバック、ガードレール規則の永続化
 """
@@ -9,6 +9,7 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime
 
 from src.db import DB_PATH, init_db
+from src.time_utils import get_jst_now_str, get_jst_today_str
 from src.contracts.decision_journal import (
     DecisionSnapshot,
     JournalEntry,
@@ -28,7 +29,7 @@ def save_decision_snapshot(snapshot: DecisionSnapshot) -> None:
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
-    created_at = snapshot.created_at or datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    created_at = snapshot.created_at or get_jst_now_str("%Y-%m-%d %H:%M:%S")
 
     cursor.execute("""
         INSERT OR REPLACE INTO decision_snapshots (
@@ -149,7 +150,7 @@ def save_evaluation_schedule(schedule: EvaluationSchedule) -> None:
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
-    created_at = schedule.created_at or datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    created_at = schedule.created_at or get_jst_now_str("%Y-%m-%d %H:%M:%S")
 
     cursor.execute("""
         INSERT OR REPLACE INTO evaluation_schedules (
@@ -176,7 +177,7 @@ def list_due_evaluation_schedules(target_date_lte: Optional[str] = None) -> List
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
 
-    today_str = target_date_lte or datetime.now().strftime("%Y-%m-%d")
+    today_str = target_date_lte or get_jst_today_str("%Y-%m-%d")
 
     cursor.execute("""
         SELECT * FROM evaluation_schedules
@@ -242,7 +243,7 @@ def save_evaluation_fact(fact: EvaluationFact) -> None:
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
-    created_at = fact.created_at or datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    created_at = fact.created_at or get_jst_now_str("%Y-%m-%d %H:%M:%S")
 
     cursor.execute("""
         INSERT OR REPLACE INTO evaluation_facts (
@@ -373,7 +374,7 @@ def save_journal_entry(entry: JournalEntry) -> None:
         entry.expected_outcome,
         risks_json,
         entry.actor,
-        entry.created_at or datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        entry.created_at or get_jst_now_str("%Y-%m-%d %H:%M:%S")
     ))
 
     conn.commit()
@@ -480,7 +481,7 @@ def save_reflection(reflection: ReflectionReport) -> None:
         json.dumps(reflection.blindspots, ensure_ascii=False),
         json.dumps(reflection.lessons_learned, ensure_ascii=False),
         json.dumps(reflection.recommended_guardrails, ensure_ascii=False),
-        reflection.created_at or datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        reflection.created_at or get_jst_now_str("%Y-%m-%d %H:%M:%S")
     ))
 
     conn.commit()
@@ -535,7 +536,7 @@ def save_human_feedback(feedback: HumanFeedback) -> None:
         feedback.rating,
         feedback.comments,
         json.dumps(feedback.corrections, ensure_ascii=False),
-        feedback.created_at or datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        feedback.created_at or get_jst_now_str("%Y-%m-%d %H:%M:%S")
     ))
 
     conn.commit()
@@ -564,7 +565,7 @@ def save_guardrail_rule(rule: GuardrailRule) -> None:
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
-    created_at = rule.created_at or datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    created_at = rule.created_at or get_jst_now_str("%Y-%m-%d %H:%M:%S")
 
     cursor.execute(
         "SELECT rule_id, status, active FROM guardrail_rules WHERE category = ? AND rule_text = ?",
@@ -618,7 +619,7 @@ def approve_guardrail_rule(rule_id: str, approved_by: str = "Human Owner") -> bo
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
-    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    now_str = get_jst_now_str("%Y-%m-%d %H:%M:%S")
     cursor.execute("""
         UPDATE guardrail_rules
         SET status = 'ACTIVE', active = 1, approved_by = ?, approved_at = ?

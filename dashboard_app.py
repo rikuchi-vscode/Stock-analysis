@@ -10,6 +10,7 @@ import pandas as pd
 import json
 from datetime import datetime
 
+from src.time_utils import get_jst_now_str, format_to_jst_str
 from src.db import init_db, get_analysis_history, get_report_by_analysis_id, get_latest_report_content
 from src.services.dashboard_service import get_dashboard_summary
 from src.services.policy_service import propose_policy, approve_policy, reject_policy, run_policy_workflow
@@ -184,7 +185,7 @@ def render_user_search():
                         "summary": ceo_state.ceo_summary.model_dump() if ceo_state.ceo_summary else None,
                         "report_path": ceo_state.report_path,
                         "verification_status": ceo_state.verification_status or "OK",
-                        "updated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        "updated_at": get_jst_now_str("%Y-%m-%d %H:%M:%S")
                     }
                 else:
                     err_text = str(ceo_state.error or "")
@@ -338,7 +339,7 @@ def render_user_search():
                 st.download_button(
                     label="📥 このレポートをダウンロード (.md)",
                     data=report_text,
-                    file_name=f"Report_{c_ticker}_{datetime.now().strftime('%Y%m%d')}.md",
+                    file_name=f"Report_{c_ticker}_{get_jst_now_str('%Y%m%d')}.md",
                     mime="text/markdown",
                     key=f"dl_report_{c_ticker}"
                 )
@@ -766,7 +767,7 @@ def main():
         else:
             st.info("👤 **現在の権限: 一般利用者モード**")
 
-        st.write(f"**データ確認日時**: {summary.generated_at}")
+        st.write(f"**データ確認日時**: {summary.generated_at} (JST/日本時間)")
         if st.button("🔄 データを最新に更新", use_container_width=True):
             st.rerun()
 

@@ -9,6 +9,7 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime
 
 from src.db import DB_PATH, init_db
+from src.time_utils import get_jst_now_str
 from src.contracts.research_policy import (
     ResearchPolicy,
     PolicyDecision,
@@ -24,17 +25,19 @@ def save_research_policy(policy: ResearchPolicy) -> None:
     cursor = conn.cursor()
 
     policy_json = json.dumps(policy.model_dump(), ensure_ascii=False)
+    created_at = policy.created_at or get_jst_now_str()
 
     cursor.execute("""
         INSERT OR REPLACE INTO research_policies (
-            strategy_id, run_id, policy_json, status, version
-        ) VALUES (?, ?, ?, ?, ?)
+            strategy_id, run_id, policy_json, status, version, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?)
     """, (
         policy.strategy_id,
         policy.run_id,
         policy_json,
         policy.status,
         policy.version,
+        created_at,
     ))
 
     conn.commit()
@@ -119,17 +122,19 @@ def record_policy_decision(decision: PolicyDecision) -> None:
     init_db()
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
+    created_at = get_jst_now_str()
 
     cursor.execute("""
         INSERT OR REPLACE INTO policy_decisions (
-            decision_id, strategy_id, decision_type, rationale, actor
-        ) VALUES (?, ?, ?, ?, ?)
+            decision_id, strategy_id, decision_type, rationale, actor, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?)
     """, (
         decision.decision_id,
         decision.strategy_id,
         decision.decision_type,
         decision.rationale,
         decision.actor,
+        created_at,
     ))
 
     conn.commit()
@@ -141,11 +146,12 @@ def save_policy_approval(approval: PolicyApproval) -> None:
     init_db()
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
+    created_at = get_jst_now_str()
 
     cursor.execute("""
         INSERT OR REPLACE INTO policy_approvals (
-            approval_id, strategy_id, requested_action, status, approved_by, comment
-        ) VALUES (?, ?, ?, ?, ?, ?)
+            approval_id, strategy_id, requested_action, status, approved_by, comment, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
     """, (
         approval.approval_id,
         approval.strategy_id,
@@ -153,6 +159,7 @@ def save_policy_approval(approval: PolicyApproval) -> None:
         approval.status,
         approval.approved_by,
         approval.comment,
+        created_at,
     ))
 
     conn.commit()
@@ -189,17 +196,19 @@ def save_policy_outcome(outcome: PolicyOutcome) -> None:
     outcome_json = json.dumps(outcome.model_dump(), ensure_ascii=False)
     coverage_json = json.dumps(outcome.coverage, ensure_ascii=False)
     run_ids_str = ",".join(outcome.analysis_run_ids)
+    created_at = get_jst_now_str()
 
     cursor.execute("""
         INSERT INTO policy_outcomes (
-            strategy_id, analysis_run_id, coverage, verification_status, outcome_json
-        ) VALUES (?, ?, ?, ?, ?)
+            strategy_id, analysis_run_id, coverage, verification_status, outcome_json, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?)
     """, (
         outcome.strategy_id,
         run_ids_str,
         coverage_json,
         outcome.verification_status,
         outcome_json,
+        created_at,
     ))
 
     conn.commit()

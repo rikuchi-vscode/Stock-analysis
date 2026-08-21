@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from typing import Dict, Any, List, Optional
 
 from src.contracts.decision_journal import DecisionSnapshot, EvaluationSchedule
+from src.time_utils import get_jst_now, get_jst_today_str, get_jst_now_str
 from src.repositories.governance_repository import (
     save_decision_snapshot,
     save_evaluation_schedule,
@@ -39,7 +40,7 @@ def capture_analysis_snapshot_and_schedule(
     Verification OK 時に分析時点の判断を固定スナップショットとして保存し、
     T+7日後、T+30日後の評価スケジュールを自動登録する。
     """
-    today_dt = datetime.now()
+    today_dt = get_jst_now()
     today_str = today_dt.strftime("%Y-%m-%d")
 
     initial_price = float(_get_val(market_data, "current_price", 0.0) or 0.0)
@@ -106,7 +107,7 @@ def capture_analysis_snapshot_and_schedule(
         identified_risks=risks,
         data_quality_snapshot=data_quality,
         verification_status=v_status,
-        created_at=today_dt.strftime("%Y-%m-%d %H:%M:%S")
+        created_at=get_jst_now_str("%Y-%m-%d %H:%M:%S")
     )
     save_decision_snapshot(snapshot)
     logger.info(f"[{analysis_run_id}] 判断スナップショットを固定保存しました (銘柄: {ticker}, スタンス: {stance}, スコア: {overall_score:.0f})")
@@ -119,7 +120,7 @@ def capture_analysis_snapshot_and_schedule(
         evaluation_type="T+7",
         target_date=(today_dt + timedelta(days=7)).strftime("%Y-%m-%d"),
         status="PENDING",
-        created_at=today_dt.strftime("%Y-%m-%d %H:%M:%S")
+        created_at=get_jst_now_str("%Y-%m-%d %H:%M:%S")
     )
     save_evaluation_schedule(sched_t7)
 
@@ -130,7 +131,7 @@ def capture_analysis_snapshot_and_schedule(
         evaluation_type="T+30",
         target_date=(today_dt + timedelta(days=30)).strftime("%Y-%m-%d"),
         status="PENDING",
-        created_at=today_dt.strftime("%Y-%m-%d %H:%M:%S")
+        created_at=get_jst_now_str("%Y-%m-%d %H:%M:%S")
     )
     save_evaluation_schedule(sched_t30)
     logger.info(f"[{analysis_run_id}] 評価期日 (T+7: {sched_t7.target_date}, T+30: {sched_t30.target_date}) を自動登録しました")

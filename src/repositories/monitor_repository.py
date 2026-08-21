@@ -9,6 +9,7 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime
 
 from src.db import DB_PATH, init_db
+from src.time_utils import get_jst_now_str
 from src.contracts.watch_item import WatchItem, WatchTriggers, MarketEvent, TriageResult
 from src.contracts.notification import NotificationMessage
 
@@ -22,11 +23,12 @@ def save_watch_item(item: WatchItem) -> None:
     cursor = conn.cursor()
 
     triggers_json = json.dumps(item.triggers.model_dump(), ensure_ascii=False)
+    created_at = item.created_at or get_jst_now_str()
 
     cursor.execute("""
         INSERT OR REPLACE INTO watch_items (
-            watch_id, ticker, company_name, triggers_json, interval_minutes, priority, active, last_checked_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            watch_id, ticker, company_name, triggers_json, interval_minutes, priority, active, last_checked_at, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         item.watch_id,
         item.ticker,
@@ -35,7 +37,8 @@ def save_watch_item(item: WatchItem) -> None:
         item.interval_minutes,
         item.priority,
         1 if item.active else 0,
-        item.last_checked_at
+        item.last_checked_at,
+        created_at
     ))
 
     conn.commit()
@@ -120,7 +123,7 @@ def update_watch_checked_time(ticker: str) -> None:
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
-    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    now_str = get_jst_now_str("%Y-%m-%d %H:%M:%S")
     cursor.execute("UPDATE watch_items SET last_checked_at = ? WHERE ticker = ?", (now_str, ticker))
     conn.commit()
     conn.close()
@@ -135,11 +138,12 @@ def save_market_event(event: MarketEvent) -> None:
     cursor = conn.cursor()
 
     payload_json = json.dumps(event.raw_payload, ensure_ascii=False)
+    detected_at = event.detected_at or get_jst_now_str()
 
     cursor.execute("""
         INSERT OR REPLACE INTO market_events (
-            event_id, ticker, company_name, event_type, severity, title, description, raw_payload
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            event_id, ticker, company_name, event_type, severity, title, description, raw_payload, detected_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         event.event_id,
         event.ticker,
@@ -149,6 +153,7 @@ def save_market_event(event: MarketEvent) -> None:
         event.title,
         event.description,
         payload_json,
+        detected_at,
     ))
 
     conn.commit()
@@ -161,10 +166,12 @@ def save_event_triage(triage: TriageResult) -> None:
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
+    created_at = triage.created_at or get_jst_now_str()
+
     cursor.execute("""
         INSERT OR REPLACE INTO event_triages (
-            triage_id, event_id, action, reason, suggested_mode, priority
-        ) VALUES (?, ?, ?, ?, ?, ?)
+            triage_id, event_id, action, reason, suggested_mode, priority, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
     """, (
         triage.triage_id,
         triage.event_id,
@@ -172,6 +179,7 @@ def save_event_triage(triage: TriageResult) -> None:
         triage.reason,
         triage.suggested_mode,
         triage.priority,
+        created_at,
     ))
 
     conn.commit()
@@ -223,11 +231,12 @@ def save_notification(notif: NotificationMessage) -> None:
     cursor = conn.cursor()
 
     meta_json = json.dumps(notif.metadata, ensure_ascii=False)
+    created_at = get_jst_now_str()
 
     cursor.execute("""
         INSERT OR REPLACE INTO notifications (
-            notification_id, channel, severity, title, body, metadata_json, delivered
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            notification_id, channel, severity, title, body, metadata_json, delivered, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         notif.notification_id,
         notif.channel,
@@ -235,7 +244,8 @@ def save_notification(notif: NotificationMessage) -> None:
         notif.title,
         notif.body,
         meta_json,
-        1 if notif.delivered else 0
+        1 if notif.delivered else 0,
+        created_at
     ))
 
     conn.commit()
